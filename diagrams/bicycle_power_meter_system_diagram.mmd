@@ -1,0 +1,82 @@
+flowchart LR
+  subgraph D["Device Layer"]
+    sg["Strain Gauge on Crank Arm"]
+    bridge["Wheatstone Bridge"]
+    adc["HX711 / ADC Front-End"]
+    gyro["Gyroscope (IMU)"]
+    esp["ESP32"]
+    calib["Calibration"]
+    compute["Edge Power Estimation<br/>torque estimate + angular velocity + power estimate"]
+
+    sg -- "strain deformation" --> bridge
+    bridge -- "analog bridge signal" --> adc
+    adc -- "digital strain reading" --> calib
+    calib -- "calibrated strain data" --> esp
+    gyro -- "angular velocity signal" --> esp
+    esp -- "processed sensor data" --> compute
+  end
+
+  subgraph C1["Communication Layer"]
+    ble["BLE GAP + GATT"]
+    packet["BLE Telemetry Packet<br/>timestamp + strain + angular velocity + power"]
+    mobileNet["4G / 5G Mobile Network"]
+    https["HTTPS / Firebase API"]
+    compute --> packet --> ble
+  end
+
+  subgraph S["Service Layer"]
+    direction TB
+
+    subgraph SR["Route Service"]
+      direction TB
+      geo["Flutter Geolocator Plugin<br/>readPositionStream() + location permission"]
+      route["Route Tracking<br/>read latitude + longitude + timestamp"]
+      polyline["Build Route Polyline<br/>prepare route for map display"]
+      mapsdk["Google Maps Flutter SDK<br/>render route on map"]
+    end
+
+    subgraph SD["Ride Data Service"]
+      direction TB
+      powerStore["Power Samples<br/>timestamp + power"]
+      merge["Merge Route Data and Power Data<br/>match by timestamp"]
+      session["Ride Session Data"]
+    end
+
+    subgraph SC["Cloud Sync Service"]
+      direction TB
+      upload["Firebase Flutter SDK"]
+    end
+  end
+
+  subgraph A["Application Layer"]
+    app["Flutter Mobile App"]
+    phoneGps["Phone GPS Sensor"]
+    dashboard["Live Dashboard"]
+    mapView["Map View"]
+    history["Ride History"]
+  end
+
+  subgraph CL["Cloud Layer"]
+    cloud["Firebase Cloud Firestore"]
+  end
+
+  ble -- "BLE notifications" --> app
+  app -- "decode telemetry packet" --> powerStore
+
+  phoneGps -- "GPS signal" --> geo
+  geo -- "position stream" --> route
+  route -- "route points" --> polyline
+  polyline -- "polyline data" --> mapsdk
+  route -- "route data" --> merge
+  powerStore -- "power samples" --> merge
+  merge -- "combined session data" --> session
+
+  session -- "ride metrics" --> dashboard
+  mapsdk -- "map widget" --> mapView
+  session -- "route + power overlay" --> mapView
+  session -- "session history" --> history
+
+  session -- "upload request" --> upload
+  upload -- "mobile internet" --> mobileNet
+  mobileNet -- "HTTPS request" --> https
+  https -- "write/read data" --> cloud
