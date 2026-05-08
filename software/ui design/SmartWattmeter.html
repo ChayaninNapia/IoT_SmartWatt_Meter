@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Watt-meter — FRA503</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="android-frame.jsx"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  background: #080c18;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  overflow-x: hidden;
+}
+:root {
+  --lime: oklch(0.62 0.17 248);
+  --lime-dim: oklch(0.48 0.14 248);
+  --lime-glow: oklch(0.62 0.17 248 / 0.28);
+  --bg: #070b14;
+  --bg2: #0c1220;
+  --bg3: #111828;
+  --card: #141e30;
+  --border: rgba(255,255,255,0.08);
+  --text: #e8edf5;
+  --text2: #7a8fa8;
+  --text3: #3d5070;
+  --red: oklch(0.65 0.20 25);
+  --amber: oklch(0.70 0.13 55);
+  --cyan: oklch(0.75 0.05 220);
+}
+::-webkit-scrollbar { width: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.phone-shell {
+  width: 360px;
+  height: 780px;
+  border-radius: 44px;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1.5px solid rgba(255,255,255,0.12);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.75), 0 0 0 8px #0d1225, 0 0 0 10px rgba(100,140,200,0.08);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.status-bar {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  background: var(--bg);
+}
+.status-time { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); }
+.punch-hole {
+  position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+  width: 20px; height: 20px; border-radius: 50%; background: #000;
+}
+.nav-gesture {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg);
+}
+.nav-pill { width: 90px; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.2); }
+.screen-area { flex: 1; overflow: hidden; position: relative; }
+.bottom-nav {
+  height: 62px;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: opacity 0.15s;
+}
+.nav-tab:active { opacity: 0.7; }
+.nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); transition: color 0.2s; font-family: 'DM Sans', sans-serif; }
+.nav-tab.active .nav-label { color: var(--lime); }
+.nav-indicator { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 28px; height: 2px; border-radius: 0 0 2px 2px; background: var(--lime); opacity: 0; transition: opacity 0.2s; }
+.nav-tab.active .nav-indicator { opacity: 1; }
+.screen { position: absolute; inset: 0; overflow-y: auto; background: var(--bg); }
+.screen-header {
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 5;
+  border-bottom: 1px solid var(--border);
+}
+.screen-title { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+.screen-subtitle { font-size: 11px; color: var(--text3); font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 1px; }
+.badge { padding: 4px 10px; border-radius: 100px; font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'DM Mono', monospace; }
+.badge-disconnected { background: rgba(255,255,255,0.06); color: var(--text3); }
+.badge-connecting { background: oklch(0.78 0.18 70 / 0.15); color: var(--amber); }
+.badge-connected { background: oklch(0.82 0.22 130 / 0.15); color: var(--lime); }
+.badge-recording { background: oklch(0.68 0.22 25 / 0.15); color: var(--red); }
+.btn-scan {
+  margin: 20px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--lime);
+  border: none;
+  color: #e8f0ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s, transform 0.1s;
+  width: calc(100% - 40px);
+}
+.btn-scan:active { opacity: 0.85; transform: scale(0.98); }
+.btn-scan:disabled { opacity: 0.4; cursor: default; }
+.device-item {
+  margin: 0 16px 8px;
+  padding: 14px 16px;
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.device-item:active { background: #1f2427; }
+.device-item.selected { border-color: var(--lime); background: oklch(0.82 0.22 130 / 0.06); }
+.device-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.device-name { font-size: 14px; font-weight: 600; color: var(--text); font-family: 'Space Grotesk', sans-serif; }
+.device-mac { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.sig-bar { display: flex; gap: 2px; align-items: flex-end; }
+.sig-b { width: 3px; border-radius: 1px; background: var(--text3); }
+.sig-b.on { background: var(--lime); }
+.btn-connect {
+  margin: 12px 16px 16px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--lime);
+  border: none;
+  color: #e8f0ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  width: calc(100% - 32px);
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-connect:active { opacity: 0.85; transform: scale(0.98); }
+.btn-connect:disabled { opacity: 0.3; cursor: default; }
+.power-hero {
+  margin: 20px 16px 0;
+  padding: 24px 20px;
+  background: var(--card);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.power-hero::before {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: 50%; transform: translateX(-50%);
+  width: 200px; height: 80px;
+  background: var(--lime-glow);
+  filter: blur(40px);
+  pointer-events: none;
+}
+.power-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); font-family: 'DM Mono', monospace; margin-bottom: 4px; }
+.power-value { font-family: 'Space Grotesk', sans-serif; font-size: 72px; font-weight: 700; color: var(--lime); line-height: 1; letter-spacing: -0.03em; position: relative; z-index: 1; }
+.power-unit { font-size: 20px; font-weight: 400; color: var(--lime-dim); margin-left: 4px; }
+.stats-row { display: flex; gap: 8px; margin: 10px 16px; }
+.stat-card { flex: 1; padding: 12px; background: var(--card); border-radius: 14px; border: 1px solid var(--border); text-align: center; }
+.stat-value { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+.stat-unit { font-size: 11px; color: var(--lime); font-weight: 600; }
+.stat-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 500; margin-top: 2px; font-family: 'DM Mono', monospace; }
+.chart-container { margin: 8px 16px; background: var(--card); border-radius: 16px; border: 1px solid var(--border); padding: 14px 14px 10px; overflow: hidden; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.chart-title { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); font-family: 'DM Mono', monospace; }
+.session-controls { margin: 10px 16px 20px; display: flex; gap: 10px; }
+.btn-session { flex: 1; height: 56px; border-radius: 16px; border: none; cursor: pointer; font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s, transform 0.1s; }
+.btn-session:active { opacity: 0.8; transform: scale(0.98); }
+.btn-start { background: var(--lime); color: #0a0c08; }
+.btn-stop { background: oklch(0.68 0.22 25 / 0.15); color: var(--red); border: 1px solid oklch(0.68 0.22 25 / 0.3); }
+.map-placeholder { margin: 0 16px 10px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); position: relative; background: #0f1a18; }
+.map-overlay-power { position: absolute; top: 12px; left: 12px; background: rgba(8,10,11,0.85); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; }
+.map-power-val { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: var(--lime); line-height: 1; }
+.map-power-lbl { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-family: 'DM Mono', monospace; }
+.route-stats { display: flex; gap: 8px; margin: 0 16px 10px; }
+.history-item { margin: 0 16px 0; padding: 16px; background: var(--card); color: var(--text); border-radius: 0; border: 1px solid var(--border); border-bottom: none; cursor: pointer; transition: background 0.2s; }
+.history-item:first-of-type { border-radius: 10px 10px 0 0; }
+.history-item:last-of-type { border-radius: 0 0 10px 10px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.history-item:active { background: #1a2440; }
+.history-date { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; }
+.history-title { font-size: 15px; font-weight: 600; color: var(--text); font-family: 'Space Grotesk', sans-serif; margin: 4px 0; }
+.history-metric { font-size: 12px; color: var(--text2); }
+.history-metric span { color: var(--lime); font-weight: 600; font-family: 'DM Mono', monospace; }
+.history-bar { height: 3px; background: var(--bg3); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.history-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--lime), var(--cyan)); }
+
+@keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+.dot1 { animation: blink 1.2s infinite 0s; }
+.dot2 { animation: blink 1.2s infinite 0.2s; }
+.dot3 { animation: blink 1.2s infinite 0.4s; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 1s linear infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.pulse-dot { animation: pulse 1.5s ease-in-out infinite; }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+.slide-up { animation: slideUp 0.3s ease-out; }
+
+.tweaks-panel {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  width: 240px;
+  background: #12171a;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 16px;
+  z-index: 1000;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  font-family: 'DM Sans', sans-serif;
+  display: none;
+}
+.tweaks-panel.open { display: block; }
+.tweaks-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; font-family: 'DM Mono', monospace; }
+.tweak-row { margin-bottom: 12px; }
+.tweak-label { font-size: 11px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+.tweak-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.tweak-opt { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: 11px; color: var(--text3); cursor: pointer; transition: all 0.15s; background: var(--bg3); }
+.tweak-opt.active { border-color: var(--lime); color: var(--lime); background: oklch(0.82 0.22 130 / 0.1); }
+.tweak-toggle { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg3); color: var(--text2); font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s; }
+.tweak-toggle.active { border-color: var(--lime); color: var(--lime); background: oklch(0.82 0.22 130 / 0.08); }
+</style>
+</head>
+<body>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "lime",
+  "powerZones": true,
+  "chartStyle": "area"
+}/*EDITMODE-END*/;
+
+const Icon = ({ name, size = 18, color = 'currentColor' }) => {
+  const icons = {
+    bluetooth: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>,
+    zap: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+    map: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>,
+    history: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+    play: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+    stop: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>,
+    location: <svg width={size} height={size} viewBox="0 0 24 24" fill={color}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>,
+    chevron: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>,
+    check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
+    scan: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="2" y="2" width="7" height="7"/><rect x="15" y="2" width="7" height="7"/><rect x="2" y="15" width="7" height="7"/><line x1="9" y1="5" x2="15" y2="5"/><line x1="5" y1="9" x2="5" y2="15"/><line x1="19" y1="9" x2="19" y2="15"/><line x1="9" y1="19" x2="15" y2="19"/><line x1="15" y1="15" x2="22" y2="22"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+const SignalBars = ({ strength = 3 }) => (
+  <div className="sig-bar">
+    {[1,2,3,4].map(i => (
+      <div key={i} className={`sig-b ${i <= strength ? 'on' : ''}`} style={{ height: 4 + i * 3 }} />
+    ))}
+  </div>
+);
+
+const PowerChart = ({ data, chartStyle }) => {
+  const W = 300, H = 90;
+  if (!data || data.length < 2) return (
+    <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'DM Mono' }}>Waiting for data…</span>
+    </div>
+  );
+  const max = Math.max(...data, 250);
+  const pts = data.map((v, i) => [
+    (i / (data.length - 1)) * W,
+    H - (v / max) * H * 0.85 - 4
+  ]);
+  const pathD = pts.map((p, i) => `${i===0?'M':'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const areaD = pathD + ` L${W},${H} L0,${H} Z`;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="oklch(0.62 0.17 248)" stopOpacity="0.35"/>
+          <stop offset="100%" stopColor="oklch(0.62 0.17 248)" stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      {[0.25,0.5,0.75].map(f => (
+        <line key={f} x1="0" y1={H*f} x2={W} y2={H*f} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+      ))}
+      {chartStyle !== 'line' && <path d={areaD} fill="url(#chartGrad)"/>}
+      <path d={pathD} fill="none" stroke="oklch(0.62 0.17 248)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx={pts[pts.length-1][0]} cy={pts[pts.length-1][1]} r="3" fill="oklch(0.62 0.17 248)"/>
+      <circle cx={pts[pts.length-1][0]} cy={pts[pts.length-1][1]} r="6" fill="oklch(0.62 0.17 248 / 0.25)" className="pulse-dot"/>
+    </svg>
+  );
+};
+
+const MapPlaceholder = ({ height = 220, polyline }) => (
+  <svg width="100%" height={height} viewBox={`0 0 320 ${height}`} style={{ display: 'block' }}>
+    <rect width="320" height={height} fill="#090e1c"/>
+    {Array.from({length:12}).map((_,i) => (
+      <React.Fragment key={i}>
+        <line x1={i*27} y1="0" x2={i*27} y2={height} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+        <line x1="0" y1={i*27} x2="320" y2={i*27} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+      </React.Fragment>
+    ))}
+    <path d="M40 180 Q80 120 140 100 Q200 80 260 60" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="8" strokeLinecap="round"/>
+    <path d="M20 80 Q60 100 100 140 Q140 180 200 200 Q240 210 300 190" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="6" strokeLinecap="round"/>
+    <path d="M160 20 L160 220" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="5"/>
+    {polyline && <path d={polyline} fill="none" stroke="oklch(0.70 0.13 55)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.9"/>}
+    <circle cx="200" cy="80" r="8" fill="oklch(0.62 0.17 248 / 0.35)"/>
+    <circle cx="200" cy="80" r="4" fill="oklch(0.62 0.17 248)"/>
+    <text x="160" y={height-8} fill="rgba(255,255,255,0.18)" fontSize="9" textAnchor="middle" fontFamily="DM Mono, monospace">GOOGLE MAPS · PLACEHOLDER</text>
+  </svg>
+);
+
+// ── Screen 1: BLE Discovery ──────────────────────────────────
+function DeviceScreen({ device }) {
+  const connected = !!device;
+  const [pinging, setPinging] = useState(false);
+  const [lastSeen, setLastSeen] = useState(null);
+
+  useEffect(() => {
+    if (!connected) return;
+    const iv = setInterval(() => {
+      setPinging(true);
+      setTimeout(() => { setPinging(false); setLastSeen(new Date()); }, 400);
+    }, 3000);
+    return () => clearInterval(iv);
+  }, [connected]);
+
+  const fmt = d => d ? `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}` : '—';
+
+  return (
+    <div className="screen slide-up">
+      <div className="screen-header">
+        <div>
+          <div className="screen-title">Device</div>
+          <div className="screen-subtitle">BLE Connection</div>
+        </div>
+        <span className={`badge ${connected ? 'badge-connected' : 'badge-disconnected'}`}>
+          {connected ? 'CONNECTED' : 'DISCONNECTED'}
+        </span>
+      </div>
+
+      <div style={{padding:'24px 20px',display:'flex',flexDirection:'column',gap:16}}>
+        {/* Status card */}
+        <div style={{background:'var(--card)',borderRadius:18,border:`1px solid ${connected?'oklch(0.62 0.17 248 / 0.3)':'var(--border)'}`,padding:'24px 20px',display:'flex',flexDirection:'column',alignItems:'center',gap:16,position:'relative',overflow:'hidden'}}>
+          {connected && <div style={{position:'absolute',inset:0,background:'oklch(0.62 0.17 248 / 0.04)',pointerEvents:'none'}}/>}
+          {/* BLE icon with pulse */}
+          <div style={{position:'relative'}}>
+            {connected && <div className="pulse-dot" style={{position:'absolute',inset:-12,borderRadius:'50%',background:'oklch(0.62 0.17 248 / 0.15)',animation:'pulse 2s ease-in-out infinite'}}/>}
+            <div style={{width:64,height:64,borderRadius:20,background:connected?'oklch(0.62 0.17 248 / 0.15)':'var(--bg3)',border:`1px solid ${connected?'oklch(0.62 0.17 248 / 0.3)':'var(--border)'}`,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+              <Icon name="bluetooth" size={28} color={connected?'var(--lime)':'var(--text3)'}/>
+            </div>
+          </div>
+          <div style={{textAlign:'center'}}>
+            <div style={{fontSize:16,fontWeight:700,color:connected?'var(--text)':'var(--text3)',fontFamily:'Space Grotesk'}}>{connected ? device.name : 'No device connected'}</div>
+            {connected && <div style={{fontSize:11,color:'var(--text3)',fontFamily:'DM Mono',marginTop:4}}>{device.mac}</div>}
+          </div>
+        </div>
+
+        {/* Info rows */}
+        {connected && (
+          <div style={{background:'var(--card)',borderRadius:14,border:'1px solid var(--border)',overflow:'hidden'}}>
+            {[
+              ['Device', device.name],
+              ['MAC Address', device.mac],
+              ['Protocol', 'BLE 5.0'],
+              ['Service UUID', '0x180D · Power Meter'],
+              ['Status', pinging ? 'Pinging…' : 'Active'],
+              ['Last Seen', fmt(lastSeen)],
+            ].map(([label, val], i, arr) => (
+              <div key={label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',borderBottom: i<arr.length-1?'1px solid var(--border)':'none'}}>
+                <span style={{fontSize:12,color:'var(--text3)',fontFamily:'DM Mono',textTransform:'uppercase',letterSpacing:'0.06em'}}>{label}</span>
+                <span style={{fontSize:12,color: label==='Status'&&pinging?'var(--amber)':'var(--text)',fontFamily:'DM Mono',fontWeight:500}}>{val}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!connected && (
+          <div style={{background:'var(--card)',borderRadius:14,border:'1px solid var(--border)',padding:'20px',textAlign:'center'}}>
+            <div style={{fontSize:12,color:'var(--text3)',lineHeight:1.7,fontFamily:'DM Mono'}}>
+              ไปที่แอป Flutter เพื่อ scan<br/>และ connect กับ ESP32<br/><br/>
+              <span style={{color:'var(--text2)'}}>BLE UUID: <span style={{color:'var(--lime)'}}>0x180D</span></span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Heatmap Route ──────────────────────────────────────────
+const ROUTE_PTS = [[30,160],[48,145],[66,132],[84,122],[102,114],[120,108],[138,103],[156,98],[174,93],[192,88],[210,82],[228,76],[246,70],[264,63],[282,56],[300,50]];
+const ROUTE_WATTS = [130,155,180,210,240,260,275,290,310,285,250,220,190,160,140,120];
+const wattColor = w => {
+  const t = Math.max(0, Math.min(1, (w - 100) / 230));
+  if (t < 0.25) { const s=t/0.25; return `rgb(${Math.round(30+s*20)},${Math.round(100+s*100)},${Math.round(220-s*30)})`; }
+  if (t < 0.5)  { const s=(t-0.25)/0.25; return `rgb(${Math.round(50+s*130)},${Math.round(200-s*20)},${Math.round(190-s*160)})`; }
+  if (t < 0.75) { const s=(t-0.5)/0.25; return `rgb(${Math.round(180+s*70)},${Math.round(180-s*60)},${Math.round(30-s*10)})`; }
+  const s=(t-0.75)/0.25; return `rgb(250,${Math.round(120-s*90)},${Math.round(20-s*10)})`;
+};
+const HeatmapRoute = ({ height=200 }) => (
+  <svg width="100%" height={height} viewBox={`0 0 330 ${height}`} style={{display:'block'}}>
+    <rect width="330" height={height} fill="#090e1c"/>
+    {Array.from({length:14}).map((_,i)=>(
+      <React.Fragment key={i}>
+        <line x1={i*25} y1="0" x2={i*25} y2={height} stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
+        <line x1="0" y1={i*18} x2="330" y2={i*18} stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
+      </React.Fragment>
+    ))}
+    <path d="M30 160 Q120 120 210 90 Q260 75 300 55" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="10" strokeLinecap="round"/>
+    {ROUTE_PTS.slice(0,-1).map(([x1,y1],i)=>{
+      const [x2,y2]=ROUTE_PTS[i+1];
+      return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={wattColor(ROUTE_WATTS[i])} strokeWidth="5" strokeLinecap="round"/>;
+    })}
+    {ROUTE_PTS.map(([x,y],i)=>(<circle key={i} cx={x} cy={y} r="3" fill={wattColor(ROUTE_WATTS[i])} opacity="0.8"/>))}
+    <circle cx={ROUTE_PTS[0][0]} cy={ROUTE_PTS[0][1]} r="6" fill="none" stroke="var(--cyan)" strokeWidth="2"/>
+    <circle cx={ROUTE_PTS[ROUTE_PTS.length-1][0]} cy={ROUTE_PTS[ROUTE_PTS.length-1][1]} r="6" fill="none" stroke="var(--red)" strokeWidth="2"/>
+    <text x={ROUTE_PTS[0][0]+8} y={ROUTE_PTS[0][1]-7} fill="var(--cyan)" fontSize="8" fontFamily="DM Mono">START</text>
+    <text x={ROUTE_PTS[ROUTE_PTS.length-1][0]-26} y={ROUTE_PTS[ROUTE_PTS.length-1][1]-8} fill="var(--red)" fontSize="8" fontFamily="DM Mono">END</text>
+    <defs><linearGradient id="heatLegend" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="rgb(30,100,220)"/><stop offset="33%" stopColor="rgb(50,200,100)"/>
+      <stop offset="66%" stopColor="rgb(250,160,20)"/><stop offset="100%" stopColor="rgb(250,20,10)"/>
+    </linearGradient></defs>
+    <rect x="80" y={height-18} width="120" height="6" rx="3" fill="url(#heatLegend)"/>
+    <text x="77" y={height-6} fill="rgba(255,255,255,0.35)" fontSize="7" textAnchor="end" fontFamily="DM Mono">LOW W</text>
+    <text x="204" y={height-6} fill="rgba(255,255,255,0.35)" fontSize="7" fontFamily="DM Mono">HIGH W</text>
+  </svg>
+);
+
+// ── Watt-Time chart (history detail) ─────────────────────────
+const HIST_WATTS = [145,158,172,195,218,240,262,285,295,280,260,242,225,208,190,175,162,148,160,178,195,212,228,245,258,272,280,268,252,235,218,200,185,170,158,148,140,132,128,136,145,155,168,180,192,205,218,230,242,250,258,265,272,278,282,285,286,284,280,275];
+const HistWattChart = () => {
+  const W=300, H=80, max=Math.max(...HIST_WATTS,300), min=100;
+  const pts=HIST_WATTS.map((v,i)=>[(i/(HIST_WATTS.length-1))*W, H-(v-min)/(max-min)*H*0.85-4]);
+  const pathD=pts.map((p,i)=>`${i===0?'M':'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+  const areaD=pathD+` L${W},${H} L0,${H} Z`;
+  const avgW=Math.round(HIST_WATTS.reduce((a,b)=>a+b,0)/HIST_WATTS.length);
+  const avgY=H-(avgW-min)/(max-min)*H*0.85-4;
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{display:'block',overflow:'visible'}}>
+      <defs><linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="oklch(0.62 0.17 248)" stopOpacity="0.3"/>
+        <stop offset="100%" stopColor="oklch(0.62 0.17 248)" stopOpacity="0"/>
+      </linearGradient></defs>
+      {[0.25,0.5,0.75].map(f=>(<line key={f} x1="0" y1={H*f} x2={W} y2={H*f} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>))}
+      <line x1="0" y1={avgY} x2={W} y2={avgY} stroke="var(--amber)" strokeWidth="0.8" strokeDasharray="4 3" opacity="0.6"/>
+      <text x="2" y={avgY-3} fill="var(--amber)" fontSize="7" fontFamily="DM Mono" opacity="0.8">AVG {avgW}W</text>
+      <path d={areaD} fill="url(#histGrad)"/>
+      <path d={pathD} fill="none" stroke="oklch(0.62 0.17 248)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+};
+
+// ── Screen 2: Dashboard ──────────────────────────────────────
+function DashboardScreen({ device, tweaks }) {
+  const [recording, setRecording] = useState(false);
+  const [power, setPower] = useState(0);
+  const [chartData, setChartData] = useState([]);
+  const [cadence, setCadence] = useState(0);
+  const [speed, setSpeed] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [avgPower, setAvgPower] = useState(0);
+  const [maxPower, setMaxPower] = useState(0);
+  const sumRef = useRef(0); const cntRef = useRef(0);
+
+  const getZone = w => {
+    if (w < 100) return { label: 'Zone 1 · Recovery', color: 'var(--cyan)' };
+    if (w < 160) return { label: 'Zone 2 · Endurance', color: 'var(--cyan)' };
+    if (w < 220) return { label: 'Zone 3 · Tempo', color: 'var(--lime)' };
+    if (w < 280) return { label: 'Zone 4 · Threshold', color: 'var(--amber)' };
+    return { label: 'Zone 5 · VO₂ Max', color: 'var(--red)' };
+  };
+
+  const fmt = s => {
+    const m = Math.floor(s/60), sec = s%60;
+    return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  };
+
+  useEffect(() => {
+    if (!recording) return;
+    const iv = setInterval(() => {
+      const base = 180 + Math.sin(Date.now()/8000)*60;
+      const next = Math.max(30, Math.round(base + (Math.random()-0.5)*40));
+      setPower(next);
+      setChartData(d => [...d.slice(-59), next]);
+      sumRef.current += next; cntRef.current += 1;
+      setAvgPower(Math.round(sumRef.current/cntRef.current));
+      setMaxPower(m => Math.max(m,next));
+      setCadence(Math.round(82+(Math.random()-0.5)*10));
+      setSpeed(parseFloat((28+(Math.random()-0.5)*4).toFixed(1)));
+      setElapsed(e => e+1);
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [recording]);
+
+  const zone = getZone(power);
+
+  const startSession = () => {
+    sumRef.current=0; cntRef.current=0;
+    setMaxPower(0); setElapsed(0); setAvgPower(0); setChartData([]); setPower(0);
+    setRecording(true);
+  };
+
+  return (
+    <div className="screen slide-up" style={{paddingBottom:8}}>
+      <div className="screen-header">
+        <div>
+          <div className="screen-title">Live Dashboard</div>
+          <div className="screen-subtitle">{device?.name || 'ESP32_PowerMeter_01'}</div>
+        </div>
+        <span className={`badge ${recording?'badge-recording':'badge-connected'}`}>
+          {recording ? <><span className="pulse-dot" style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:'var(--red)',marginRight:4}}/>REC</> : 'LIVE'}
+        </span>
+      </div>
+
+      <div className="power-hero">
+        <div className="power-label">Instantaneous Power</div>
+        <div className="power-value">{power}<span className="power-unit">W</span></div>
+        {tweaks.powerZones && recording && <div style={{fontSize:11,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',color:zone.color,marginTop:8,fontFamily:'DM Mono'}}>{zone.label}</div>}
+        {!recording && <div style={{fontSize:12,color:'var(--text3)',marginTop:8,fontFamily:'DM Mono'}}>Press START to begin session</div>}
+      </div>
+
+      <div className="stats-row">
+        <div className="stat-card">
+          <div className="stat-value">{cadence}<span className="stat-unit" style={{fontSize:11}}> rpm</span></div>
+          <div className="stat-label">Cadence</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{speed}<span className="stat-unit" style={{fontSize:11}}> km/h</span></div>
+          <div className="stat-label">Speed</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{color:'var(--lime)'}}>{avgPower}<span className="stat-unit" style={{fontSize:11}}> W</span></div>
+          <div className="stat-label">Avg Power</div>
+        </div>
+      </div>
+
+      <div className="stats-row" style={{marginTop:0}}>
+        <div className="stat-card" style={{flex:2}}>
+          <div className="stat-value" style={{fontFamily:'DM Mono',fontSize:26}}>{fmt(elapsed)}</div>
+          <div className="stat-label">Elapsed Time</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{color:'var(--amber)'}}>{maxPower}<span className="stat-unit" style={{fontSize:11}}> W</span></div>
+          <div className="stat-label">Peak Power</div>
+        </div>
+      </div>
+
+      <div className="chart-container">
+        <div className="chart-header">
+          <span className="chart-title">Power — Last 60s</span>
+          <span style={{fontSize:10,color:recording?'var(--lime)':'var(--text3)',fontFamily:'DM Mono'}}>{recording?'● LIVE':'— IDLE'}</span>
+        </div>
+        <PowerChart data={chartData} chartStyle={tweaks.chartStyle}/>
+      </div>
+
+      <div className="session-controls">
+        <button
+          className={`btn-session ${recording ? 'btn-stop' : 'btn-start'}`}
+          onClick={recording ? ()=>setRecording(false) : startSession}>
+          {recording
+            ? <><Icon name="stop" size={15} color="var(--red)"/> Stop &amp; Finish</>
+            : <><Icon name="play" size={14} color="#e8f0ff"/> Start Session</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Screen 3: Map ────────────────────────────────────────────
+function MapScreen() {
+  const [tracking, setTracking] = useState(false);
+  const [power, setPower] = useState(187);
+  const [dist, setDist] = useState(0);
+  const [gain, setGain] = useState(0);
+  const distRef = useRef(0);
+
+  useEffect(() => {
+    if (!tracking) return;
+    const iv = setInterval(() => {
+      setPower(Math.round(170+Math.sin(Date.now()/6000)*60+(Math.random()-0.5)*30));
+      distRef.current += 0.028+Math.random()*0.01;
+      setDist(parseFloat(distRef.current.toFixed(2)));
+      setGain(g => g+(Math.random()>0.7?Math.round(Math.random()*2):0));
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [tracking]);
+
+  const poly = tracking
+    ? "M40 200 Q80 160 120 140 Q160 120 200 100 Q230 85 260 70"
+    : "M40 200 Q80 160 120 140 Q160 120 200 100";
+
+  return (
+    <div className="screen slide-up">
+      <div className="screen-header">
+        <div>
+          <div className="screen-title">Route Tracking</div>
+          <div className="screen-subtitle">GPS + Power Overlay</div>
+        </div>
+        <button
+          onClick={()=>setTracking(t=>!t)}
+          className={`badge ${tracking?'badge-recording':'badge-connected'}`}
+          style={{border:'none',cursor:'pointer',padding:'6px 12px'}}>
+          {tracking ? <><span className="pulse-dot" style={{display:'inline-block',width:6,height:6,borderRadius:'50%',background:'var(--red)',marginRight:4}}/>STOP GPS</> : '▶ START GPS'}
+        </button>
+      </div>
+
+      <div className="map-placeholder">
+        <MapPlaceholder height={240} polyline={poly}/>
+        <div className="map-overlay-power">
+          <div className="map-power-val">{power}<span style={{fontSize:12,color:'var(--lime-dim)',marginLeft:2}}>W</span></div>
+          <div className="map-power-lbl">Live Power</div>
+        </div>
+        <div style={{position:'absolute',bottom:12,right:12,background:'rgba(8,10,11,0.85)',backdropFilter:'blur(8px)',border:'1px solid var(--border)',borderRadius:8,padding:'5px 8px',display:'flex',alignItems:'center',gap:4}}>
+          <Icon name="location" size={12} color="var(--lime)"/>
+          <span style={{fontSize:10,color:'var(--text2)',fontFamily:'DM Mono'}}>13.7563°N 100.5018°E</span>
+        </div>
+      </div>
+
+      <div className="route-stats">
+        <div className="stat-card">
+          <div className="stat-value">{dist}<span className="stat-unit" style={{fontSize:11}}> km</span></div>
+          <div className="stat-label">Distance</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{color:'var(--cyan)'}}>{gain}<span className="stat-unit" style={{fontSize:11}}> m</span></div>
+          <div className="stat-label">Elevation</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value" style={{color:'var(--amber)'}}>{power}<span className="stat-unit" style={{fontSize:11}}> W</span></div>
+          <div className="stat-label">Power</div>
+        </div>
+      </div>
+
+      <div style={{margin:'4px 16px 8px',padding:12,background:'var(--card)',borderRadius:12,border:'1px solid var(--border)'}}>
+        <div style={{fontSize:11,color:'var(--text3)',fontFamily:'DM Mono',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:6}}>Route Progress</div>
+        <div style={{height:3,background:'var(--bg3)',borderRadius:2,overflow:'hidden'}}>
+          <div style={{height:'100%',width:`${Math.min(dist/10*100,100)}%`,background:'linear-gradient(90deg,var(--lime),var(--cyan))',borderRadius:2,transition:'width 0.5s'}}/>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',marginTop:4}}>
+          <span style={{fontSize:10,color:'var(--text3)',fontFamily:'DM Mono'}}>Start</span>
+          <span style={{fontSize:10,color:'var(--text2)',fontFamily:'DM Mono'}}>{dist} / 10.0 km</span>
+        </div>
+      </div>
+
+
+    </div>
+  );
+}
+
+// ── Screen 4: History ────────────────────────────────────────
+const HISTORY = [
+  { id:1, date:'MON 19 APR 2026', title:'Morning Interval', dist:24.3, time:'58:42', avg:198, max:312, pct:0.78 },
+  { id:2, date:'SAT 17 APR 2026', title:'Long Endurance Ride', dist:68.1, time:'2:41:03', avg:155, max:287, pct:0.92 },
+  { id:3, date:'THU 15 APR 2026', title:'Recovery Spin', dist:18.2, time:'44:15', avg:112, max:178, pct:0.45 },
+  { id:4, date:'TUE 13 APR 2026', title:'FTP Test', dist:30.5, time:'1:12:00', avg:241, max:356, pct:1.0 },
+];
+
+function HistoryScreen() {
+  const [selected, setSelected] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [names, setNames] = useState({});
+
+  // Filter/sort state
+  const [sortBy, setSortBy] = useState('date');
+  const [sortDir, setSortDir] = useState('desc');
+  const [minDist, setMinDist] = useState('');
+  const [maxDist, setMaxDist] = useState('');
+  // pending (not applied yet)
+  const [pendingSort, setPendingSort] = useState('date');
+  const [pendingDir, setPendingDir] = useState('desc');
+  const [pendingMinDist, setPendingMinDist] = useState('');
+  const [pendingMaxDist, setPendingMaxDist] = useState('');
+
+  const openFilter = () => {
+    setPendingSort(sortBy); setPendingDir(sortDir);
+    setPendingMinDist(minDist); setPendingMaxDist(maxDist);
+    setFilterOpen(true);
+  };
+  const applyFilter = () => {
+    setSortBy(pendingSort); setSortDir(pendingDir);
+    setMinDist(pendingMinDist); setMaxDist(pendingMaxDist);
+    setFilterOpen(false);
+  };
+  const resetFilter = () => {
+    setPendingSort('date'); setPendingDir('desc');
+    setPendingMinDist(''); setPendingMaxDist('');
+  };
+
+  const open = item => { setLoading(true); setTimeout(()=>{ setLoading(false); setSelected(item); }, 700); };
+  const timeToSec = t => { const p = t.split(':').map(Number); return p.length===3 ? p[0]*3600+p[1]*60+p[2] : p[0]*60+p[1]; };
+
+  const isFiltered = sortBy!=='date' || sortDir!=='desc' || minDist!=='' || maxDist!=='';
+
+  const sorted = [...HISTORY]
+    .filter(item => {
+      if (minDist!=='' && item.dist < parseFloat(minDist)) return false;
+      if (maxDist!=='' && item.dist > parseFloat(maxDist)) return false;
+      return true;
+    })
+    .sort((a,b) => {
+      let v = 0;
+      if (sortBy==='dist') v = a.dist - b.dist;
+      else if (sortBy==='time') v = timeToSec(a.time) - timeToSec(b.time);
+      else if (sortBy==='avg') v = a.avg - b.avg;
+      else v = a.id - b.id;
+      return sortDir==='desc' ? -v : v;
+    });
+
+  if (loading) return (
+    <div className="screen" style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:12}}>
+      <svg className="spinner" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--lime)" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
+      <span style={{fontSize:12,color:'var(--text3)',fontFamily:'DM Mono'}}>Loading from Firebase…</span>
+    </div>
+  );
+
+  if (selected) return (
+    <div className="screen slide-up">
+      <div className="screen-header">
+        <button onClick={()=>setSelected(null)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--lime)',display:'flex',alignItems:'center',gap:4,padding:0}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>
+          <span style={{fontSize:13,fontWeight:600,fontFamily:'Space Grotesk'}}>Back</span>
+        </button>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <div style={{textAlign:'right'}}>
+            {editing ? (
+              <input
+                value={editName}
+                onChange={e=>setEditName(e.target.value)}
+                onBlur={()=>{ if(editName.trim()) setNames(n=>({...n,[selected.id]:editName.trim()})); setEditing(false); }}
+                onKeyDown={e=>{ if(e.key==='Enter'){ if(editName.trim()) setNames(n=>({...n,[selected.id]:editName.trim()})); setEditing(false); }}}
+                autoFocus
+                style={{background:'var(--bg3)',border:'1px solid var(--lime)',borderRadius:6,color:'var(--text)',fontSize:13,fontWeight:600,padding:'4px 8px',fontFamily:'Space Grotesk',width:140,outline:'none'}}
+              />
+            ) : (
+              <div className="screen-title" style={{fontSize:14}}>{names[selected.id] || selected.title}</div>
+            )}
+            <div className="screen-subtitle">{selected.date}</div>
+          </div>
+          {/* Edit icon */}
+          <button
+            onClick={()=>{ setEditName(names[selected.id]||selected.title); setEditing(true); }}
+            style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:8,width:32,height:32,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div className="map-placeholder" style={{margin:'12px 16px 10px'}}>
+        <HeatmapRoute height={190}/>
+      </div>
+      <div className="stats-row">
+        <div className="stat-card"><div className="stat-value">{selected.dist}<span className="stat-unit" style={{fontSize:11}}> km</span></div><div className="stat-label">Distance</div></div>
+        <div className="stat-card"><div className="stat-value" style={{fontFamily:'DM Mono',fontSize:18}}>{selected.time}</div><div className="stat-label">Duration</div></div>
+      </div>
+      <div className="stats-row" style={{marginTop:0}}>
+        <div className="stat-card"><div className="stat-value" style={{color:'var(--lime)'}}>{selected.avg}<span className="stat-unit" style={{fontSize:11}}> W</span></div><div className="stat-label">Avg Power</div></div>
+        <div className="stat-card"><div className="stat-value" style={{color:'var(--amber)'}}>{selected.max}<span className="stat-unit" style={{fontSize:11}}> W</span></div><div className="stat-label">Peak Power</div></div>
+        <div className="stat-card"><div className="stat-value" style={{color:'var(--cyan)'}}>{Math.round(selected.avg*0.9)}<span className="stat-unit" style={{fontSize:11}}> kJ</span></div><div className="stat-label">Work</div></div>
+      </div>
+      {/* Watt vs Time chart */}
+      <div className="chart-container" style={{margin:'0 16px 16px'}}>
+        <div className="chart-header">
+          <span className="chart-title">Power vs Time</span>
+          <span style={{fontSize:10,color:'var(--text3)',fontFamily:'DM Mono'}}>{selected.time}</span>
+        </div>
+        <HistWattChart/>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="screen slide-up" style={{overflow: filterOpen ? 'hidden' : 'auto'}}>
+      <div className="screen-header">
+        <div>
+          <div className="screen-title">Ride History</div>
+          <div className="screen-subtitle">{sorted.length} sessions</div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          {isFiltered && <span style={{width:6,height:6,borderRadius:'50%',background:'var(--amber)',display:'inline-block'}}/>}
+          <button onClick={openFilter} style={{display:'flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:10,border:`1px solid ${isFiltered?'var(--amber)':'var(--border)'}`,background: isFiltered?'oklch(0.70 0.13 55 / 0.1)':'var(--bg3)',color:isFiltered?'var(--amber)':'var(--text2)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'DM Mono',letterSpacing:'0.05em'}}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            FILTER
+          </button>
+        </div>
+      </div>
+
+      <div style={{padding:'8px 0'}}>
+        {sorted.length===0 && (
+          <div style={{textAlign:'center',padding:'40px 20px',color:'var(--text3)',fontSize:13,fontFamily:'DM Mono'}}>No rides match filter</div>
+        )}
+        {sorted.map(item => (
+          <div key={item.id} className="history-item" onClick={()=>open(item)}>
+            <div className="history-date">{item.date}</div>
+            <div className="history-title">{names[item.id] || item.title}</div>
+            <div style={{display:'flex',gap:16,alignItems:'center'}}>
+              <div className="history-metric"><span>{item.dist}</span> km</div>
+              <div className="history-metric"><span>{item.time}</span></div>
+              <div className="history-metric">Avg <span>{item.avg}W</span></div>
+              <div style={{marginLeft:'auto'}}><Icon name="chevron" size={14} color="var(--text3)"/></div>
+            </div>
+            <div className="history-bar"><div className="history-bar-fill" style={{width:`${item.pct*100}%`}}/></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter bottom sheet */}
+      {filterOpen && (
+        <>
+          <div onClick={()=>setFilterOpen(false)} style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.5)',zIndex:20}}/>
+          <div style={{position:'absolute',bottom:0,left:0,right:0,background:'var(--bg2)',borderRadius:'18px 18px 0 0',zIndex:21,padding:'0 0 16px',border:'1px solid var(--border)'}}>
+            {/* Handle */}
+            <div style={{display:'flex',justifyContent:'center',padding:'12px 0 4px'}}>
+              <div style={{width:36,height:3,borderRadius:2,background:'var(--border)'}}/>
+            </div>
+            <div style={{padding:'4px 20px 12px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              <span style={{fontSize:14,fontWeight:700,color:'var(--text)',fontFamily:'Space Grotesk'}}>Filter & Sort</span>
+              <button onClick={()=>setFilterOpen(false)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',fontSize:18,lineHeight:1}}>×</button>
+            </div>
+
+            {/* Sort by */}
+            <div style={{padding:'0 20px 14px'}}>
+              <div style={{fontSize:10,color:'var(--text3)',fontFamily:'DM Mono',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:8}}>Sort by</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {[['date','Date'],['dist','Distance'],['time','Duration'],['avg','Avg Power']].map(([val,lbl])=>(
+                  <button key={val} onClick={()=>setPendingSort(val)}
+                    style={{padding:'6px 14px',borderRadius:100,border:`1px solid ${pendingSort===val?'var(--lime)':'var(--border)'}`,background:pendingSort===val?'oklch(0.62 0.17 248 / 0.12)':'var(--bg3)',color:pendingSort===val?'var(--lime)':'var(--text3)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'DM Mono',transition:'all 0.15s'}}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Direction */}
+            <div style={{padding:'0 20px 14px'}}>
+              <div style={{fontSize:10,color:'var(--text3)',fontFamily:'DM Mono',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:8}}>Order</div>
+              <div style={{display:'flex',gap:6}}>
+                {[['desc','Newest / Highest'],['asc','Oldest / Lowest']].map(([val,lbl])=>(
+                  <button key={val} onClick={()=>setPendingDir(val)}
+                    style={{flex:1,padding:'6px 10px',borderRadius:10,border:`1px solid ${pendingDir===val?'var(--lime)':'var(--border)'}`,background:pendingDir===val?'oklch(0.62 0.17 248 / 0.12)':'var(--bg3)',color:pendingDir===val?'var(--lime)':'var(--text3)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'DM Mono',transition:'all 0.15s'}}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Distance range */}
+            <div style={{padding:'0 20px 16px'}}>
+              <div style={{fontSize:10,color:'var(--text3)',fontFamily:'DM Mono',textTransform:'uppercase',letterSpacing:'0.08em',marginBottom:8}}>Distance range (km)</div>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                <input type="number" placeholder="Min" value={pendingMinDist} onChange={e=>setPendingMinDist(e.target.value)}
+                  style={{flex:1,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:8,color:'var(--text)',fontSize:13,padding:'7px 10px',fontFamily:'DM Mono',outline:'none'}}/>
+                <span style={{color:'var(--text3)',fontSize:12}}>—</span>
+                <input type="number" placeholder="Max" value={pendingMaxDist} onChange={e=>setPendingMaxDist(e.target.value)}
+                  style={{flex:1,background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:8,color:'var(--text)',fontSize:13,padding:'7px 10px',fontFamily:'DM Mono',outline:'none'}}/>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div style={{display:'flex',gap:10,padding:'0 20px'}}>
+              <button onClick={resetFilter}
+                style={{flex:1,height:46,borderRadius:12,border:'1px solid var(--border)',background:'var(--bg3)',color:'var(--text2)',fontFamily:'Space Grotesk',fontSize:13,fontWeight:600,cursor:'pointer'}}>
+                Reset
+              </button>
+              <button onClick={applyFilter}
+                style={{flex:2,height:46,borderRadius:12,border:'none',background:'var(--lime)',color:'#e8f0ff',fontFamily:'Space Grotesk',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                Apply Filter
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Root App ─────────────────────────────────────────────────
+function App() {
+  const [tab, setTab] = useState(() => parseInt(localStorage.getItem('sw-tab')||'0'));
+  const [device, setDevice] = useState(null);
+  const [tweaks, setTweaks] = useState(TWEAK_DEFAULTS);
+  const [tweaksOpen, setTweaksOpen] = useState(false);
+
+  useEffect(()=>{ localStorage.setItem('sw-tab', tab); }, [tab]);
+
+  useEffect(() => {
+    const handler = e => {
+      if (e.data?.type==='__activate_edit_mode') setTweaksOpen(true);
+      if (e.data?.type==='__deactivate_edit_mode') setTweaksOpen(false);
+    };
+    window.addEventListener('message', handler);
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+    return ()=>window.removeEventListener('message', handler);
+  }, []);
+
+  const setTweak = (k,v) => {
+    const next = {...tweaks, [k]:v};
+    setTweaks(next);
+    window.parent.postMessage({type:'__edit_mode_set_keys', edits:next},'*');
+  };
+
+  const tabs = [
+    {id:0,label:'Device',icon:'bluetooth'},
+    {id:1,label:'Power',icon:'zap'},
+    {id:2,label:'Map',icon:'map'},
+    {id:3,label:'History',icon:'history'},
+  ];
+
+  return (
+    <div style={{position:'relative'}}>
+      <div className="phone-shell">
+        <div className="status-bar">
+          <span className="status-time">09:41</span>
+          <div className="punch-hole"/>
+          <div style={{display:'flex',alignItems:'center',gap:5}}>
+            <svg width="14" height="10" viewBox="0 0 20 14"><path d="M10 2C6 2 2.5 4 0 7l2 2c2-2.5 4.8-4 8-4s6 1.5 8 4l2-2C17.5 4 14 2 10 2zm0 4c-2.5 0-4.8 1-6.5 2.5l2 2C6.8 9.5 8.3 9 10 9s3.2.5 4.5 1.5l2-2C14.8 7 12.5 6 10 6zm0 4c-1.5 0-2.8.6-3.8 1.5L10 15l3.8-3.5C12.8 10.6 11.5 10 10 10z" fill="rgba(255,255,255,0.6)"/></svg>
+            <svg width="22" height="11" viewBox="0 0 22 11"><rect x="0.5" y="0.5" width="18" height="10" rx="2" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/><rect x="1.5" y="1.5" width="14" height="8" rx="1" fill="rgba(255,255,255,0.6)"/><rect x="19" y="3" width="2.5" height="5" rx="1" fill="rgba(255,255,255,0.4)"/></svg>
+          </div>
+        </div>
+
+        <div className="screen-area">
+          {tab===0 && <DeviceScreen device={device}/>}
+          {tab===1 && <DashboardScreen device={device} tweaks={tweaks}/>}
+          {tab===2 && <MapScreen/>}
+          {tab===3 && <HistoryScreen/>}
+        </div>
+
+        <div className="bottom-nav">
+          {tabs.map(t => (
+            <div key={t.id} className={`nav-tab ${tab===t.id?'active':''}`} onClick={()=>setTab(t.id)}>
+              <div className="nav-indicator"/>
+              <Icon name={t.icon} size={20} color={tab===t.id?'var(--lime)':'var(--text3)'}/>
+              <div className="nav-label">{t.label}</div>
+            </div>
+          ))}
+        </div>
+        <div className="nav-gesture"><div className="nav-pill"/></div>
+      </div>
+
+      {/* Tweaks */}
+      <div className={`tweaks-panel ${tweaksOpen?'open':''}`}>
+        <div className="tweaks-title">Tweaks</div>
+        <div className="tweak-row">
+          <div className="tweak-label">Chart Style</div>
+          <div className="tweak-opts">
+            {['area','line'].map(v=>(
+              <div key={v} className={`tweak-opt ${tweaks.chartStyle===v?'active':''}`} onClick={()=>setTweak('chartStyle',v)}>{v}</div>
+            ))}
+          </div>
+        </div>
+        <div className="tweak-row">
+          <div className="tweak-label">Power Zones</div>
+          <button className={`tweak-toggle ${tweaks.powerZones?'active':''}`} onClick={()=>setTweak('powerZones',!tweaks.powerZones)}>
+            {tweaks.powerZones?'✓ Zones visible':'○ Zones hidden'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+<div id="root"></div>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <rect width="120" height="80" fill="#080a0b"/>
+    <rect x="35" y="8" width="50" height="64" rx="8" fill="#101416" stroke="#2a2f32" strokeWidth="1"/>
+    <rect x="46" y="22" width="28" height="12" rx="3" fill="#1a1f22"/>
+    <text x="60" y="32" fill="oklch(0.82 0.22 130)" fontSize="9" fontWeight="700" textAnchor="middle" fontFamily="monospace">247W</text>
+    <rect x="40" y="38" width="40" height="18" rx="3" fill="#1a1f22"/>
+    <polyline points="42,53 47,48 52,51 57,44 62,47 67,42 72,46 77,43 80,50" fill="none" stroke="oklch(0.82 0.22 130)" strokeWidth="1.5"/>
+  </svg>
+</template>
+</html>

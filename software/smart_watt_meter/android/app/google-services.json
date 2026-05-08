@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "793127736360",
+    "project_id": "iot-smart-watt-meter-83be9",
+    "storage_bucket": "iot-smart-watt-meter-83be9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:793127736360:android:835c0e0ac512c19807d11d",
+        "android_client_info": {
+          "package_name": "com.smartwattmeter.smart_watt_meter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcu-TWzoJRSIlaxgk6uRRvwMWvL7bQOao"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

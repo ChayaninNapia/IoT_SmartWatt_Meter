@@ -31,7 +31,7 @@ Hardware/config:
 ```text
 HX711 DOUT = GPIO32
 HX711 SCK  = GPIO33
-HX711 gain = 32
+HX711 gain = 64
 Baud rate  = 115200
 Samples    = 100
 ```

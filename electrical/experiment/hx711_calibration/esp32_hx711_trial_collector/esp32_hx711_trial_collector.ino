@@ -191,7 +191,7 @@ void setup() {
   Serial.println();
   Serial.println("HX711 trial collector started.");
   Serial.println("Board target: ESP32 Dev Module");
-  Serial.println("HX711 DOUT -> GPIO32, SCK -> GPIO33, gain 32");
+  Serial.println("HX711 DOUT -> GPIO32, SCK -> GPIO33, gain 64");
   printHelp();
 }
 
